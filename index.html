@@ -703,8 +703,11 @@
     const suggestedQuestionsContainer = document.getElementById("suggestedQuestionsContainer");
     const initialChatHtml = chatMessages ? chatMessages.innerHTML : "";
     // ========== SETTINGS (NEU) =============
-    const API_URL = "https://dlh-chatbot-api-openai.onrender.com"; 
-    const EDIT_PASSWORD = "admin_save_f3a9"; 
+    const API_URL = "https://dlh-chatbot-api-openai.onrender.com";
+    // Admin password lives ONLY on the server now (env var ADMIN_TOKEN on
+    // Render). The frontend prompts the operator for it at runtime, stores
+    // it in sessionStorage as "admin_token", and sends it on save requests
+    // via the X-Admin-Token header. No secret is shipped in this file.
     // =====================================
 
     let lastQuestionAnswer = {};
@@ -716,8 +719,10 @@
     sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
     localStorage.setItem("dlh_session_id", sessionId);
 }
-    // Admin-Status beim Laden wiederherstellen
-    window.adminModeActive = sessionStorage.getItem("isEditor") === "1";
+    // Admin-Status beim Laden wiederherstellen — Token (kein Klartext-Flag mehr).
+    // Migration: alten "isEditor"-Eintrag aufräumen, falls noch vorhanden.
+    sessionStorage.removeItem("isEditor");
+    window.adminModeActive = !!sessionStorage.getItem("admin_token");
 	function appendMessage(sender, text, htmlContent = null) {
     const msgDiv = document.createElement("div");
     msgDiv.className = `message ${sender}`; // "user" oder "bot"
@@ -738,22 +743,25 @@
     return msgDiv;
     }
 
+    // Returns the admin token string (from sessionStorage or a fresh prompt),
+    // or null if the user cancelled. The token is NOT validated locally —
+    // the backend enforces correctness via the X-Admin-Token header on save.
     function ensureEditor() {
-        if (sessionStorage.getItem("isEditor") === "1") {
+        let token = sessionStorage.getItem("admin_token");
+        if (token) {
             window.adminModeActive = true;
-            return true;
+            return token;
         }
-        const pw = window.prompt("Admin-Passwort für Änderungen eingeben:");
-        if (pw && pw === EDIT_PASSWORD) {
-            sessionStorage.setItem("isEditor", "1");
-            window.adminModeActive = true;
-            return true;
-        }
-        return false;
+        token = window.prompt("Admin-Passwort eingeben:");
+        if (!token) return null;
+        sessionStorage.setItem("admin_token", token);
+        window.adminModeActive = true;
+        return token;
     }
 
     async function saveAnswerToBin(question, answerHtml, saveButton) {
-        if (!ensureEditor()) return;
+        const token = ensureEditor();
+        if (!token) return;
 
         // Keywords filtern um Überflutung zu vermeiden
         const stopWords = ["was", "ist", "sind", "die", "der", "das", "und", "wie", "ich", "auf", "für", "fuer", "am", "zum", "man", "unter", "findet", "funktioniert"];
@@ -773,7 +781,10 @@
         try {
             const response = await fetch(targetUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Admin-Token': token,
+                },
                 body: JSON.stringify(payload),
             });
 
@@ -794,6 +805,15 @@
                     saveButton.textContent = "✅ Neu gespeichert";
                 }
                 saveButton.disabled = true;
+            } else if (response.status === 403) {
+                // Wrong/missing token. Forget it locally and re-prompt next time.
+                sessionStorage.removeItem("admin_token");
+                window.adminModeActive = false;
+                saveButton.textContent = "❌ Ungültiges Passwort";
+                alert("Ungültiges Admin-Passwort. Bitte erneut über /admin im Chat eingeben.");
+            } else if (response.status === 503) {
+                alert("Der Server hat ADMIN_TOKEN nicht konfiguriert. " +
+                      "In Render → Settings → Environment ergänzen, dann erneut versuchen.");
             } else {
                 alert("Fehler beim Speichern: " + response.status);
             }
@@ -1066,15 +1086,27 @@ chatForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const message = chatInput.value.trim();
     if (message) {
-        if (message === EDIT_PASSWORD) {
-            if (ensureEditor()) {
+        // Admin activation: typing "/admin" prompts for the password and
+        // stores it in sessionStorage. Validation happens server-side on
+        // the first save attempt (a wrong password yields a clear 403).
+        if (message.toLowerCase() === "/admin") {
+            const t = ensureEditor();
+            if (t) {
                 addMessageToChat(
                     "Admin-Modus aktiviert. Speicher-Buttons 💾 erscheinen bei der nächsten Antwort.",
                     "bot"
                 );
             } else {
-                addMessageToChat("Falsches Passwort.", "bot", true);
+                addMessageToChat("Admin-Eingabe abgebrochen.", "bot");
             }
+            chatInput.value = "";
+            return;
+        }
+        // Logout: typing "/logout" clears the stored token and disables admin.
+        if (message.toLowerCase() === "/logout") {
+            sessionStorage.removeItem("admin_token");
+            window.adminModeActive = false;
+            addMessageToChat("Admin-Modus deaktiviert.", "bot");
             chatInput.value = "";
             return;
         }
