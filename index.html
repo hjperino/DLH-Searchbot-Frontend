@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLH Chatbot - Digital Learning Hub Zürich</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+:root{
+  --dlh-bordeaux: #8B1E3F;
+  --dlh-bordeaux-dark: #6f1732;
+}
+
+        .chat-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* IHR KORREKTES HEADER-DESIGN (MIT LOGOS) WIRD BEIBEHALTEN */
+        .chat-header {
+            background: linear-gradient(135deg, #7B4397 0%, #DC2430 100%);
+            color: white;
+            padding: 10px 20px; /* Leichte Anpassung für die Bilder */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+            
+        .header-logo {
+            height: 40px;
+            width: auto;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+          .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+           
+        
+        .chat-header .logo {
+            height: 40px;
+        }
+        .chat-header .avatar {
+            height: 35px;
+            border-radius: 50%;
+        }
+        .chat-header h1 {
+            font-size: 1.25rem;
+            margin: 0 auto; /* Zentriert den Titel zwischen den Logos */
+        }
+        /* (Ende Header-Stile) */
+
+        #resetButton {
+            background: none;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            color: white;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #resetButton.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* IHR KORREKTES LAYOUT: VORSCHLÄGE OBEN */
+        .suggested-questions-container {
+            padding: 15px 20px;
+            background: #fdfdfd;
+            border-bottom: 1px solid #e0e0e0;
+        }
+		
+		/* Abschnittstitel (Startscreen) */
+        .section-title {
+            margin: 6px 0 10px 0;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--dlh-bordeaux);
+}
+        .suggested-questions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+        /* IHR KORREKTES BUTTON-DESIGN (PILLEN) */
+.suggested-question {
+    background: #f3e9fc; /* wie Fokus-Block */
+    border: 2px solid rgba(123, 67, 151, 0.35); /* wie Fokus-Block */
+    color: #7B4397;
+    border-radius: 999px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.suggested-question:hover {
+    border-color: var(--dlh-bordeaux);
+}
+        /* (Ende Layout-Stile) */
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            max-width: 85%;
+            display: flex;
+            flex-direction: column;
+        }
+        .message.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        .message.bot {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+        .message-bubble {
+            padding: 12px 18px;
+            border-radius: 20px;
+            line-height: 1.5;
+            font-size: 1rem;
+            overflow-wrap: anywhere;   /* bricht lange URLs sauber um */
+            word-break: break-word;
+        }
+        .message.user .message-bubble {
+            background-color: var(--dlh-bordeaux);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        .message.bot .message-bubble {
+            background-color: #e5e5ea;
+            color: #333;
+            border-bottom-left-radius: 5px;
+            max-width: 92%;
+        }
+        .message.bot .message-bubble.loading {
+        background-color: #f3e9fc;
+        color: #7B4397;
+        border: 2px solid #7B4397;
+        font-style: italic;
+       }
+
+        .message.bot .message-bubble.error {
+            background-color: #ffeaea;
+            color: #d90000;
+            border: 1px solid #d90000;
+        }
+        /* Standard-Abstände für Text im Bot */
+        .message.bot .message-bubble p {
+            margin: 0 0 0.7em 0;
+        }
+        .message.bot .message-bubble p:last-child {
+            margin-bottom: 0;
+        }
+        .message.bot .message-bubble ul,
+        .message.bot .message-bubble ol {
+            margin: 0.4em 0 0.8em 1.2em;
+        }
+        .message.bot .message-bubble li {
+            margin: 0.25em 0;
+        }
+
+        /* Links: besser sichtbar & umbrechbar */
+        .message.bot .message-bubble a {
+            color: #0056b3;
+            text-decoration: underline;
+            overflow-wrap: anywhere;
+        }
+        /* ----- NEU: Admin Save Button ----- */
+  .admin-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    padding: 6px 12px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.admin-save-btn:hover {
+    background-color: #218838;
+}
+		
+        .message.bot .admin-save-button.visible {
+            display: block; /* Sichtbar für Bot-Nachrichten, wenn Admin */
+        }
+        .admin-save-button:disabled {
+            background: #d4edda;
+            color: #155724;
+            cursor: default;
+        }
+        /* ----- Ende Admin Save Button ----- */
+
+        .chat-input {
+            padding: 20px;
+            background: #fdfdfd;
+            border-top: 1px solid #e0e0e0;
+        }
+        .chat-input form {
+            display: flex;
+        }
+        .chat-input input {
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 15px;
+            font-size: 1rem;
+        }
+        .chat-input button {
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-left: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+              background: var(--dlh-bordeaux);
+        }
+        .chat-input button:hover {
+            background: var(--dlh-bordeaux-dark);
+}
+        .chat-input input:focus {
+            outline: none;
+            border-color: var(--dlh-bordeaux);
+            box-shadow: 0 0 0 3px rgba(139, 30, 63, 0.18);
+        }
+		
+		/* --- Fokus 2026 Card (Startscreen) --- */
+.fokus-card{
+  margin: 14px 20px 0 20px;
+  padding: 16px 16px;
+  border-radius: 14px;
+  border: 2px solid rgba(123, 67, 151, 0.35);
+  background: #f3e9fc; /* passt zu dlh-answer */
+  color: #333;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.fokus-title{
+  margin: 0 0 8px 0;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #7B4397; /* violett wie im Bot */
+  font-size: 1.25rem;
+}
+
+.fokus-title small{
+  display: block;
+  font-weight: 700;
+  color: var(--dlh-bordeaux);
+  font-size: 1.05rem;
+  margin-top: 2px;
+}
+
+.fokus-quote{
+  margin: 10px 0 10px 0;
+  padding-left: 10px;
+  border-left: 4px solid var(--dlh-bordeaux);
+  font-style: italic;
+  color: #4a4a4a;
+}
+
+.fokus-text{
+  margin: 0 0 12px 0;
+  color: #333;
+}
+
+.fokus-link{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--dlh-bordeaux);
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.fokus-link:hover{
+  background: var(--dlh-bordeaux-dark);
+  text-decoration: none;
+}
+		
+        /* --- STILE FÜR BOT-ANTWORTEN (HINZUGEFÜGT) --- */
+        .dlh-answer ol.timeline {
+            list-style: none;
+            padding-left: 20px;
+            border-left: 3px solid #ddd;
+            margin-top: 10px;
+        }
+/* Nur Timeline bekommt den grossen Punkt */
+.dlh-answer ol.timeline > li {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.dlh-answer ol.timeline > li::before {
+  content: '●';
+  position: absolute;
+  left: -27px;
+  top: 0;
+  color: #7B4397;
+  font-size: 1.0rem; /* ggf. kleiner */
+}
+
+/* Normale Listen: Browser-Bullets verwenden */
+.dlh-answer ul,
+.dlh-answer ol {
+  padding-left: 1.2em;
+}
+
+.dlh-answer li::before {
+  content: none;
+}
+        .dlh-answer time {
+            font-weight: bold;
+            display: block;
+        }
+        .dlh-answer .meta {
+            font-size: 0.9rem;
+            color: #7B4397;
+        }
+
+        .dlh-answer .cards {
+            margin-top: 10px;
+        }
+        /* CSS für die "Boxen" */
+        .dlh-answer .card {
+            margin-bottom: 15px; 
+            border: 1px solid #eee; 
+            padding: 10px; 
+            border-radius: 5px;
+        }
+        .dlh-answer .card h4 {
+            margin-bottom: 5px;
+        }
+        
+        .dlh-answer h3 {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .dlh-answer .sources,
+        .dlh-answer ul.sources {
+           font-size: 0.9rem;
+           opacity: 0.85;
+        }
+        .dlh-answer a {
+           color: #5e2f7a;
+           font-weight: 600;
+           text-decoration: none;
+        }
+        .dlh-answer a:hover {
+            text-decoration: underline;
+        }
+        /* Textfarbe */
+.dlh-answer {
+  color: #7B4397;
+  background-color: #f3e9fc;
+  border: 2px solid #7B4397;
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+
+/* Falls Inline-Styles aus dem Backend kommen: überschreiben */
+.dlh-answer [style*="color"] { color: inherit !important; }
+
+        /* Mobile phones (landscape) - 481px to 767px */
+        @media screen and (min-width: 481px) and (max-width: 767px) {
+            body {
+                padding: 10px;
+            }
+
+            .chat-container {
+                height: calc(100vh - 20px);
+                max-width: 100%;
+            }
+
+            .chat-header {
+                padding: 15px;
+            }
+
+            .header-logo {
+                height: 35px;
+            }
+
+            .header-text h1 {
+                font-size: 20px;
+            }
+
+            .message {
+                max-width: 75%;
+            }
+
+            .welcome-message {
+                padding: 30px 20px;
+            }
+        }
+
+		/* --- Weiterführend-Block optisch integrieren --- */
+.dlh-answer .fixed-link{
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(123, 67, 151, 0.25);
+}
+
+.dlh-answer .fixed-link h4{
+  margin: 0 0 8px 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #7B4397;
+}
+
+.dlh-answer .fixed-link ul{
+  margin: 0.2em 0 0 1.2em;
+  padding-left: 0;
+}
+
+.dlh-answer .fixed-link li{
+  margin: 0.25em 0;
+}
+
+.dlh-answer .fixed-link a{
+  color: #0056b3;
+  text-decoration: underline;
+  font-weight: 700;
+}
+		
+        /* Tablets (portrait) - 768px to 1024px */
+        @media screen and (min-width: 768px) and (max-width: 1024px) {
+            .chat-container {
+                max-width: 700px;
+                height: 80vh;
+                min-height: 600px;
+                max-height: 800px;
+            }
+
+            .message {
+                max-width: 75%;
+            }
+        }
+
+        /* Tablets (landscape) - adjust height for landscape orientation */
+        @media screen and (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            body {
+                padding: 10px;
+            }
+
+            .chat-container {
+                height: 90vh;
+                max-height: 90vh;
+            }
+
+            .chat-header {
+                padding: 10px 20px;
+            }
+
+            .header-text h1 {
+                font-size: 18px;
+            }
+
+            .chat-messages {
+                padding: 12px 20px;
+            }
+
+            .welcome-message {
+                padding: 20px;
+            }
+
+            .welcome-message h2 {
+                font-size: 20px;
+            }
+        }
+
+        /* Desktop - 1025px and above */
+        @media screen and (min-width: 1025px) {
+            .chat-container {
+                max-width: 650px;
+                height: 750px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+			.message.bot .message-bubble,
+            .message.user .message-bubble {
+                max-width: 100%;
+            }
+        }
+
+        /* Large desktop - 1440px and above */
+        @media screen and (min-width: 1440px) {
+            .chat-container {
+                max-width: 700px;
+                height: 800px;
+            }
+        }
+
+        /* Very small devices - handle extremely small screens */
+        @media screen and (max-height: 500px) {
+            .welcome-message {
+                padding: 15px;
+            }
+
+            .welcome-message h2 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+
+            .suggested-questions {
+                margin-top: 10px;
+                gap: 6px;
+            }
+
+            .suggested-question {
+                padding: 5px 10px;
+                font-size: 12px;
+            }
+
+            .chat-header {
+                padding: 10px 15px;
+            }
+        }
+/* ================================
+   Mobile Layout Optimierung
+   ================================ */
+@media (max-width: 600px) {
+
+  /* Gesamte Message fast volle Breite */
+  .message {
+    max-width: 95%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Bubble selbst volle Breite */
+  .message.bot .message-bubble,
+  .message.user .message-bubble {
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Antwort-Container weniger Rand */
+  .dlh-answer {
+    padding: 12px;
+    font-size: 0.95rem;   /* leicht kleiner */
+    line-height: 1.4;
+  }
+
+  /* Listen kompakter */
+  .dlh-answer ul,
+  .dlh-answer ol {
+    padding-left: 1.1em;
+  }
+
+  .dlh-answer li {
+    margin-bottom: 0.4em;
+  }
+
+  /* Direktlink kompakter */
+  .fixed-link {
+    margin-top: 12px;
+  }
+
+  .fixed-link a {
+    font-size: 0.95rem;
+  }
+}		
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <header class="chat-header">
+            <a href="https://dlh.zh.ch" target="_blank">
+                <img src="Medien/logo-dlh.svg" alt="DLH Logo" class="header-logo">
+            </a>
+            <h1>DLH Chatbot</h1>
+            <a href="https://dlh.zh.ch" target="_blank">
+                <img src="Medien/dlh-label.svg" alt="DLH Label" class="header-logo">
+            </a>
+            &nbsp;<button id="resetButton" title="Chat zurücksetzen">&#x21BA;</button>
+        </header>
+
+        <!-- Scrollbarer Bereich: Begrüssung, Vorschläge, Chatverlauf -->
+        <div class="chat-messages" id="chatMessages">
+
+
+          <div class="suggested-questions-container" id="suggestedQuestionsContainer">
+                <h2 class="section-title">Schnelle Information:</h2>
+                <div class="suggested-questions">
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Wann ist der nächste Impulsworkshop?')">Nächster Impulsworkshop</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was sind Innovationsfonds Projekte?')">Info Innovationsfonds</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was ist GenKI?')">Info GenKI</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was findet man unter Kuratiertes?')">Info Kuratiertes</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was sind CoPs?')">Info CoPs</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Wie funktioniert die Vernetzung am DLH?')">Info Vernetzung</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Auf welche Weiterbildungen weist der DLH hin?')">Info Weiterbildung</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Welche Fobizz-Angebote gibt es?')">Info Fobizz</button>
+					<button class="suggested-question" onclick="sendSuggestedQuestion('Was ist Fokus 2026?')">Fokus 2026</button>
+					<button class="suggested-question" onclick="sendSuggestedQuestion('Was ist das Thema der neuesten Stecknadel?')">aktuelle Stecknadel</button>
+					<button class="suggested-question" onclick="sendSuggestedQuestion('Was steht im aktuellen DLH-Newsletter?')">
+                    neuester Newsletter
+                    </button>
+					<button class="suggested-question"
+                    onclick="sendSuggestedQuestion('Welche Handreichungen und Leitfäden finde ich beim DLH?')">
+                    Handreichungen / Leitfäden
+                    </button>
+					<button class="suggested-question"
+                    onclick="sendSuggestedQuestion('Was sind eAssessments?')">
+                    eAssessments
+                    </button>
+                </div>
+				
+            </div>
+			<div class="fokus-card" id="fokusCard">
+  <h2 class="fokus-title">
+    Denken mit KI – im Unterricht
+  </h2>
+
+  <div class="fokus-quote">
+    Denken mit KI heisst: mitdenken.
+  </div>
+
+  <p class="fokus-text">
+    Wie gelingt es, KI so einzusetzen, dass das Denken der Schülerinnen und Schüler sowie Lernenden vertieft und erweitert wird?
+  </p>
+
+  <a class="fokus-link" href="https://dlh.zh.ch/home/fokus-2026" target="_blank" rel="noopener noreferrer">
+    Fokus 2026 ↗
+  </a>
+</div>
+            <!-- weitere Nachrichten werden per JS hier unten angehängt -->
+        </div>
+
+        <!-- Eingabefeld bleibt immer zuunterst -->
+        <div class="chat-input">
+            <h2 class="section-title">&nbsp; &nbsp;Individuelle Fragen zum Digital Learning Hub:</h2>
+            <form id="chatForm">
+                <input type="text" id="chatInput" placeholder="Stellen Sie eine Frage... (aber Antwort pr&uuml;fen, bin noch im Training! )" autocomplete="off">
+                <button type="submit" title="Senden">&uarr;</button>
+            </form>
+        </div>
+    </div>
+
+<script>
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+    const chatMessages = document.getElementById("chatMessages");
+    const resetButton = document.getElementById("resetButton");
+    const suggestedQuestionsContainer = document.getElementById("suggestedQuestionsContainer");
+    const initialChatHtml = chatMessages ? chatMessages.innerHTML : "";
+    // ========== SETTINGS (NEU) =============
+    const API_URL = "https://dlh-chatbot-api-openai.onrender.com"; 
+    const EDIT_PASSWORD = "admin_save_f3a9"; 
+    // =====================================
+
+    let lastQuestionAnswer = {};
+    // Speichert den Conversation-State aus dem Backend (Follow-ups etc.)
+    let conversationState = null;
+	// NEU: stabile Session-ID pro Browser (muss vor sendMessage existieren!)
+    let sessionId = localStorage.getItem("dlh_session_id");
+    if (!sessionId) {
+    sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem("dlh_session_id", sessionId);
+}
+    // Admin-Status beim Laden wiederherstellen
+    window.adminModeActive = sessionStorage.getItem("isEditor") === "1";
+	function appendMessage(sender, text, htmlContent = null) {
+    const msgDiv = document.createElement("div");
+    msgDiv.className = `message ${sender}`; // "user" oder "bot"
+
+    const bubble = document.createElement("div");
+    bubble.className = "message-bubble";
+
+    if (htmlContent) {
+        bubble.innerHTML = htmlContent;
+    } else {
+        bubble.textContent = text;
+    }
+
+    msgDiv.appendChild(bubble);
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    return msgDiv;
+    }
+
+    function ensureEditor() {
+        if (sessionStorage.getItem("isEditor") === "1") {
+            window.adminModeActive = true;
+            return true;
+        }
+        const pw = window.prompt("Admin-Passwort für Änderungen eingeben:");
+        if (pw && pw === EDIT_PASSWORD) {
+            sessionStorage.setItem("isEditor", "1");
+            window.adminModeActive = true;
+            return true;
+        }
+        return false;
+    }
+
+    async function saveAnswerToBin(question, answerHtml, saveButton) {
+        if (!ensureEditor()) return;
+
+        // Keywords filtern um Überflutung zu vermeiden
+        const stopWords = ["was", "ist", "sind", "die", "der", "das", "und", "wie", "ich", "auf", "für", "fuer", "am", "zum", "man", "unter", "findet", "funktioniert"];
+        const cleanQuestion = question.toLowerCase().replace(/[?!.]/g, "").trim();
+        const filteredKeywords = cleanQuestion.split(/\s+/).filter(k => k.length > 3 && !stopWords.includes(k));
+        
+        // PAYLOAD DEFINITION (FEHLTE IM ORIGINAL)
+        const payload = {
+            question: question,
+            answer_html: answerHtml,
+            keywords: [...filteredKeywords, cleanQuestion]
+        };
+
+        const cleanBaseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+        const targetUrl = `${cleanBaseUrl}/admin/save-faq`;
+
+        try {
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (response.ok) {
+                // New backend returns {ok, status, message}; older versions
+                // returned {answer: "..."}. Handle both gracefully.
+                let status = "saved";
+                try {
+                    const data = await response.json();
+                    if (data && typeof data.status === "string") {
+                        status = data.status;
+                    }
+                } catch (_) { /* legacy backend or non-JSON body — keep default */ }
+
+                if (status === "updated") {
+                    saveButton.textContent = "♻️ Aktualisiert";
+                } else {
+                    saveButton.textContent = "✅ Neu gespeichert";
+                }
+                saveButton.disabled = true;
+            } else {
+                alert("Fehler beim Speichern: " + response.status);
+            }
+        } catch (error) {
+            console.error("Netzwerkfehler:", error);
+            alert("Netzwerkfehler beim Speichern. Versuche es nochmal.");
+        }
+    }
+	
+	
+	
+// NUR EINE Definition lassen und sicherstellen, dass sie global ist
+window.sendSuggestedQuestion = function(message) {
+    console.log("Button geklickt für:", message);
+
+    // Suggested Questions starten immer einen neuen Thread
+    conversationState = null;
+    lastQuestionAnswer = {};
+    window.lastUserQuestion = null;
+
+    // Neue Session-ID, damit auch serverseitiges Memory frisch ist
+    sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem("dlh_session_id", sessionId);
+
+    // Optional: UI visuell "frisch" machen (ohne Reset-Screen)
+    // Wenn du stattdessen den kompletten Startscreen willst, rufe resetChatUiAndState() auf.
+    // resetChatUiAndState();
+
+    sendMessage(message);
+};
+	
+function formatBotMessage(message, sources = []) {
+  if (!message) return "";
+  const trimmed = message.trim();
+
+  // WICHTIG: Wenn Backend schon fertiges HTML liefert, direkt rendern
+  if (trimmed.startsWith("<section")) {
+    return trimmed;
+  }
+
+  // Sonst: Plaintext/Markdown minimal formatieren
+  let t = escapeHtml(message);
+  t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+  const lines = t.split("\n");
+  let out = [];
+  let inList = false;
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    const m = line.match(/^\-\s+(.*)$/);
+    if (m) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${m[1]}</li>`);
+      continue;
+    }
+    if (inList) { out.push("</ul>"); inList = false; }
+    if (line.trim() === "") out.push("</p><p>");
+    else out.push(line);
+  }
+
+  if (inList) out.push("</ul>");
+  return `<section class='dlh-answer'><p>${linkify(out.join("\n"))}</p></section>`;
+}
+		
+    async function sendMessage(message = null) {
+    let userInput = message ?? chatInput.value.trim();
+    if (!userInput) return;
+
+    // Wenn der User eine Korrektur signalisiert, automatisch die letzte Nutzerfrage als KI-Suche neu stellen
+    const isCorrection = /^(das\s+ist\s+falsch|falsch|stimmt\s+nicht|wrong|not\s+correct)\b/i.test(userInput);
+
+    if (isCorrection && lastQuestionAnswer && lastQuestionAnswer.question) {
+        userInput = `KI-Suche: ${lastQuestionAnswer.question}`;
+    }
+
+    // Falls es eine KI-Suche ist, zeigen wir dem User nur die eigentliche Frage an
+    let displayInput = userInput.startsWith("KI-Suche: ") ? userInput.replace("KI-Suche: ", "") : userInput;
+    
+    addMessageToChat(displayInput, "user");
+    chatInput.value = "";
+
+    const loadingBubble = addMessageToChat("Bot durchsucht die Live-Inhalte...", "bot", false, true);
+
+    try {
+        const response = await fetch(`${API_URL}/ask`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              question: userInput,
+              conversation_state: conversationState,
+              session_id: sessionId
+            })
+        });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            
+            // WICHTIG: Lade-Bubble entfernen und Antwort neu via addMessageToChat einfügen
+            // Nur so wird der Speicher-Button-Check für die neue Nachricht getriggert.
+            loadingBubble.remove();
+
+            if (data.metadata) {
+                conversationState = data.metadata;
+            }
+            // Kein else: alten Kontext behalten wenn Antwort keine Metadaten hat
+
+            const answer = data.answer ?? data.answer_html ?? data.response ?? data.result ?? "";
+            // Letzte Frage merken (für automatische KI-Suche bei "falsch/stimmt nicht")
+            lastQuestionAnswer = {
+                question: displayInput,
+                answer: answer
+            };
+            if (!answer) throw new Error("Antwortfeld fehlt im JSON");
+
+            // Antwort mit Button-Logik neu generieren
+            addMessageToChat(answer, "bot");
+
+        } catch (error) {
+            console.error("Fehler:", error);
+            const bubble = loadingBubble.querySelector(".message-bubble");
+            bubble.classList.remove("loading");
+            bubble.classList.add("error");
+            bubble.textContent = "Es gab ein Problem bei der Anfrage.";
+        }
+    }
+			
+			
+    function cleanHtmlLinks(html) {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        div.querySelectorAll("a").forEach(a => {
+            const href = a.getAttribute("href");
+            const text = (a?.textContent || href || "").trim();
+            a.textContent = text;
+            a.setAttribute("href", href);
+            a.setAttribute("target", "_blank");
+            a.setAttribute("rel", "noopener noreferrer");
+        });
+        return div.innerHTML;
+    }
+
+    function escapeHtml(str) {
+        return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function linkify(text) {
+        return text.replace(/(https?:\/\/[^\s<]+)/g, `<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>`);
+    }
+
+    function looksLikeHtml(s) {
+        const t = (s || "").trim();
+        return t.startsWith("<") && t.endsWith(">");
+    }
+
+    function renderSources(sources) {
+        if (!Array.isArray(sources) || sources.length === 0) return "";
+        const items = sources.filter(s => s && s.url).map(s => {
+            const title = (s.title || s.url).trim();
+            const url = s.url.trim();
+            return `<li><a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></li>`;
+        }).join("");
+        return `<h3>Quellen</h3><ul class="sources">${items}</ul>`;
+    }
+
+    function stripSourcesFromHtml(html) {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+        div.querySelectorAll("h3, h4").forEach(h => {
+            if (!h.closest('.fixed-link') && (h.textContent || "").trim().toLowerCase() === "quellen") {
+                const next = h.nextElementSibling;
+                h.remove();
+                if (next && next.matches("ul.sources, ul.source, ul")) next.remove();
+            }
+        });
+        div.querySelectorAll("ul.sources").forEach(ul => {
+            if (!ul.closest('.fixed-link')) ul.remove();
+        });
+        return div.innerHTML;
+    }
+
+function addMessageToChat(message, sender, isError = false, isLoading = false) {
+    if (!chatMessages) return; // Guard: ohne Container keinen Chat
+
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `message ${sender}`;
+
+    const messageBubble = document.createElement("div");
+    messageBubble.className = "message-bubble";
+
+    // Fokus-Karte entfernen, sobald die erste echte Bot-Antwort kommt
+    if (sender === "bot" && !isLoading && !isError) {
+        document.getElementById("fokusCard")?.remove();
+    }
+
+    if (isError) {
+        messageBubble.className += " error";
+        messageBubble.innerHTML = String(message ?? "");
+    } else if (isLoading) {
+        messageBubble.className += " loading";
+        messageBubble.textContent = String(message ?? "");
+    } else if (sender === "bot") {
+        try {
+            const cleaned = stripSourcesFromHtml(String(message ?? ""));
+            const formatted = formatBotMessage(cleaned, []);
+            messageBubble.innerHTML = formatted;
+        } catch (e) {
+            console.error("Bot formatting failed", e);
+            messageBubble.textContent = String(message ?? "");
+        }
+    } else {
+        messageBubble.textContent = String(message ?? "");
+    }
+
+    messageDiv.appendChild(messageBubble);
+
+    // Admin Save Button (falls aktiv)
+    if (sender === "bot" && !isLoading && !isError && window.adminModeActive) {
+        if (!messageBubble.textContent.includes("Admin-Modus aktiviert")) {
+            const saveBtn = document.createElement("button");
+            saveBtn.className = "admin-save-btn";
+            saveBtn.style.alignSelf = "flex-start";
+            saveBtn.innerHTML = "💾 Antwort in FAQ speichern";
+            saveBtn.onclick = () => {
+                const question = window.lastUserQuestion || "Manuelle FAQ";
+                saveAnswerToBin(question, messageBubble.innerHTML, saveBtn);
+            };
+            messageDiv.appendChild(saveBtn);
+        }
+    }
+
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    if (sender === "user") {
+        window.lastUserQuestion = message;
+        resetButton?.classList.add("visible");
+    }
+
+    return messageDiv;
+}
+
+function resetChatUiAndState() {
+    // State reset
+    conversationState = null;
+    lastQuestionAnswer = {};
+    window.lastUserQuestion = null;
+
+    // neue Session-ID erzwingen (damit Backend-Memory neu startet)
+    sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    localStorage.setItem("dlh_session_id", sessionId);
+
+    // UI reset
+    if (chatMessages) {
+        chatMessages.innerHTML = initialChatHtml; // Welcome + Suggested + Fokus wieder da
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    if (chatInput) chatInput.value = "";
+
+    resetButton?.classList.remove("visible");
+}
+
+resetButton?.addEventListener("click", (e) => {
+    e.preventDefault();
+    resetChatUiAndState();
+});
+
+chatForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const message = chatInput.value.trim();
+    if (message) {
+        if (message === EDIT_PASSWORD) {
+            if (ensureEditor()) {
+                addMessageToChat(
+                    "Admin-Modus aktiviert. Speicher-Buttons 💾 erscheinen bei der nächsten Antwort.",
+                    "bot"
+                );
+            } else {
+                addMessageToChat("Falsches Passwort.", "bot", true);
+            }
+            chatInput.value = "";
+            return;
+        }
+        await sendMessage(message);
+    }
+});
+    window.addEventListener("load", async () => {
+        try {
+            const res = await fetch(`${API_URL}/health`);
+            const data = await res.json();
+            console.log("✅ API connected:", data);
+        } catch (error) {
+            console.error("Health check failed:", error);
+        }
+    });
+
+    chatInput.focus();
+</script>	
+	
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b27fb001c7f24c4',t:'MTc2NjQ5NDE4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
