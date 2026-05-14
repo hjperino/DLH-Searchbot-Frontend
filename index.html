@@ -743,10 +743,10 @@
     return msgDiv;
     }
 
-    // Returns the admin token string (from sessionStorage or a fresh prompt),
-    // or null if the user cancelled. The token is NOT validated locally —
-    // the backend enforces correctness via the X-Admin-Token header on save.
-    function ensureEditor() {
+    // Returns the admin token string (from sessionStorage, or a fresh
+    // prompt that's validated against the backend before activation),
+    // or null if the user cancelled or entered the wrong password.
+    async function ensureEditor() {
         let token = sessionStorage.getItem("admin_token");
         if (token) {
             window.adminModeActive = true;
@@ -754,13 +754,42 @@
         }
         token = window.prompt("Admin-Passwort eingeben:");
         if (!token) return null;
-        sessionStorage.setItem("admin_token", token);
-        window.adminModeActive = true;
-        return token;
+
+        // Validate the token against the backend BEFORE activating
+        // admin mode in the UI. Avoids the previous confusing state
+        // where a wrong password silently "worked" until the first
+        // save attempt revealed the 403.
+        const cleanBaseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+        try {
+            const res = await fetch(`${cleanBaseUrl}/admin/check-token`, {
+                method: 'POST',
+                headers: { 'X-Admin-Token': token },
+            });
+            if (res.ok) {
+                sessionStorage.setItem("admin_token", token);
+                window.adminModeActive = true;
+                return token;
+            }
+            if (res.status === 403) {
+                alert("❌ Ungültiges Admin-Passwort.");
+                return null;
+            }
+            if (res.status === 503) {
+                alert("Der Server hat ADMIN_TOKEN nicht konfiguriert. " +
+                      "In Render → Settings → Environment ergänzen.");
+                return null;
+            }
+            alert("Admin-Validierung fehlgeschlagen (HTTP " + res.status + ").");
+            return null;
+        } catch (err) {
+            console.error("Netzwerkfehler bei Admin-Validierung:", err);
+            alert("Netzwerkfehler bei der Validierung des Admin-Passworts.");
+            return null;
+        }
     }
 
     async function saveAnswerToBin(question, answerHtml, saveButton) {
-        const token = ensureEditor();
+        const token = await ensureEditor();
         if (!token) return;
 
         // Keywords filtern um Überflutung zu vermeiden
@@ -1090,16 +1119,16 @@ chatForm?.addEventListener("submit", async (e) => {
         // stores it in sessionStorage. Validation happens server-side on
         // the first save attempt (a wrong password yields a clear 403).
         if (message.toLowerCase() === "/admin") {
-            const t = ensureEditor();
+            chatInput.value = "";
+            const t = await ensureEditor();
             if (t) {
                 addMessageToChat(
                     "Admin-Modus aktiviert. Speicher-Buttons 💾 erscheinen bei der nächsten Antwort.",
                     "bot"
                 );
-            } else {
-                addMessageToChat("Admin-Eingabe abgebrochen.", "bot");
             }
-            chatInput.value = "";
+            // On failure ensureEditor already shows an alert; no extra
+            // bot message needed (the alert is the clearer signal).
             return;
         }
         // Logout: typing "/logout" clears the stored token and disables admin.
