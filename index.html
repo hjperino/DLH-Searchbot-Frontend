@@ -448,18 +448,24 @@
             }
         }
 
-		/* --- Weiterführend-Block optisch integrieren --- */
-.dlh-answer .fixed-link{
+		/* --- Weiterführend- / Direktlink- / Playlist-Block: DLH-Karte --- */
+/* Basis-Regel gilt auch für Blöcke ausserhalb von .dlh-answer
+   (z.B. der "Weiterführend"-Block wird nach der Antwort angehängt). */
+.fixed-link{
   margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(123, 67, 151, 0.25);
+  padding: 12px 14px;
+  border: 1px solid rgba(139, 30, 63, 0.22);
+  border-left: 4px solid var(--dlh-bordeaux);
+  border-radius: 10px;
+  background: rgba(139, 30, 63, 0.05);
 }
 
-.dlh-answer .fixed-link h4{
+.fixed-link h3,
+.fixed-link h4{
   margin: 0 0 8px 0;
   font-size: 1.05rem;
   font-weight: 800;
-  color: #7B4397;
+  color: var(--dlh-bordeaux);
 }
 
 .dlh-answer .fixed-link ul{
