@@ -453,11 +453,14 @@
    (z.B. der "Weiterführend"-Block wird nach der Antwort angehängt). */
 .fixed-link{
   margin-top: 14px;
-  padding: 12px 14px;
+  padding: 12px 14px 12px 16px;
   border: 1px solid rgba(139, 30, 63, 0.22);
-  border-left: 4px solid var(--dlh-bordeaux);
   border-radius: 10px;
   background: rgba(139, 30, 63, 0.05);
+  /* Bordeaux-Akzent links per Inset-Schatten statt dickem Rand — so bleiben
+     alle vier Ecken gleichmässig rund (ungleiche Randbreiten liessen die
+     Ecke unten links eckig wirken). */
+  box-shadow: inset 4px 0 0 0 var(--dlh-bordeaux);
 }
 
 .fixed-link h3,
