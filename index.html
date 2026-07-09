@@ -650,29 +650,23 @@
           <div class="suggested-questions-container" id="suggestedQuestionsContainer">
                 <h2 class="section-title">Schnelle Information:</h2>
                 <div class="suggested-questions">
-                    <button class="suggested-question" onclick="sendSuggestedQuestion('Wann ist der nächste Impulsworkshop?')">Nächster Impulsworkshop</button>
-                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was sind Innovationsfonds Projekte?')">Info Innovationsfonds</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was ist Fokus 2026?')">Fokus 2026</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was steht im aktuellen DLH-Newsletter?')">neuester Newsletter</button>
                     <button class="suggested-question" onclick="sendSuggestedQuestion('Was ist GenKI?')">Info GenKI</button>
-                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was finde ich zu Prompting bei DLH?')">Prompting</button>
-                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was findet man unter Kuratiertes?')">Info Kuratiertes</button>
-                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was sind CoPs?')">Info CoPs</button>
                     <button class="suggested-question" onclick="sendSuggestedQuestion('Wie funktioniert die Vernetzung am DLH?')">Info Vernetzung</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was sind CoPs?')">Info CoPs</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Wann ist der nächste Impulsworkshop?')">Nächster Impulsworkshop</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was findet man unter Kuratiertes?')">Info Kuratiertes</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was ist das Thema der neuesten Stecknadel?')">aktuelle Stecknadel</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was sind eAssessments?')">eAssessments</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was finde ich zu Prompting bei DLH?')">Prompting</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Welche KI-Tools beschreibt der DLH?')">KI-Tools</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Welche Good-Practice-Beispiele gibt es beim DLH?')">Good Practice Beispiele</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Welche Podcasts bietet der DLH?')">Podcasts</button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Was sind Innovationsfonds Projekte?')">Info Innovationsfonds</button>
                     <button class="suggested-question" onclick="sendSuggestedQuestion('Auf welche Weiterbildungen weist der DLH hin?')">Info Weiterbildung</button>
                     <button class="suggested-question" onclick="sendSuggestedQuestion('Welche Fobizz-Angebote gibt es?')">Info Fobizz</button>
-                    <button class="suggested-question" onclick="sendSuggestedQuestion('Welche KI-Tools beschreibt der DLH?')">KI-Tools</button>
-					<button class="suggested-question" onclick="sendSuggestedQuestion('Was ist Fokus 2026?')">Fokus 2026</button>
-					<button class="suggested-question" onclick="sendSuggestedQuestion('Was ist das Thema der neuesten Stecknadel?')">aktuelle Stecknadel</button>
-					<button class="suggested-question" onclick="sendSuggestedQuestion('Was steht im aktuellen DLH-Newsletter?')">
-                    neuester Newsletter
-                    </button>
-					<button class="suggested-question"
-                    onclick="sendSuggestedQuestion('Welche Handreichungen und Leitfäden finde ich beim DLH?')">
-                    Handreichungen / Leitfäden
-                    </button>
-					<button class="suggested-question"
-                    onclick="sendSuggestedQuestion('Was sind eAssessments?')">
-                    eAssessments
-                    </button>
+                    <button class="suggested-question" onclick="sendSuggestedQuestion('Welche Handreichungen und Leitfäden finde ich beim DLH?')">Handreichungen / Leitfäden</button>
                 </div>
 				
             </div>
@@ -884,7 +878,7 @@ window.sendSuggestedQuestion = function(message) {
 
     sendMessage(message);
 };
-	
+
 function formatBotMessage(message, sources = []) {
   if (!message) return "";
   const trimmed = message.trim();
