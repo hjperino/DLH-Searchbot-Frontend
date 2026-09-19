@@ -401,7 +401,7 @@
         <select class="sortierung" id="sortierung" aria-label="Sortierung">
           <option value="gefaess">nach Gefäss</option>
           <option value="titel">nach Titel</option>
-          <option value="datum">nach Datum</option>
+          <option value="datum">nach Datum, neuste zuerst</option>
           <option value="aufwand">nach Aufwand</option>
         </select>
       </div>
@@ -487,13 +487,35 @@ const falte = s => (s||"").toLowerCase()
   .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
   .replace(/[­​]/g,"");
 
+/* Das Feld `datum` hat ZWEI Formen: tagesgenau bei den Impuls-Workshops
+   («15.09.2026»), monatsgenau bei den Essenzen («September 2023»). Der erste
+   Versuch zerlegte nur nach Punkten — die Essenzen behielten damit ihren
+   Klartext und sortierten alphabetisch nach Monatsnamen: September, Oktober,
+   März. Beide Formen werden hier auf einen Schlüssel JJJJMMTT gebracht. */
+const MONATE = {januar:1, februar:2, "märz":3, maerz:3, april:4, mai:5, juni:6,
+                juli:7, august:8, september:9, oktober:10, november:11, dezember:12};
+
+function datumSchluessel(d){
+  const t = (d||"").trim();
+  if (!t) return "";
+  let m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);          // 15.09.2026
+  if (m) return m[3] + m[2].padStart(2,"0") + m[1].padStart(2,"0");
+  m = t.match(/^([A-Za-zÄÖÜäöüß]+)\s+(\d{4})$/);               // September 2023
+  if (m){
+    const nr = MONATE[m[1].toLowerCase()];
+    if (nr) return m[2] + String(nr).padStart(2,"0") + "00";
+  }
+  m = t.match(/(20\d{2})/);                                     // Notnagel: Jahr
+  return m ? m[1] + "0000" : "";
+}
+
 /* Suchtext je Angebot einmal vorbereiten (die Filterseite hatte das als _s). */
 ANG.forEach((a,i) => {
   a._i = i;
   a._such = falte([a.titel, a.lead, a.quelle, (a.faecher||[]).join(" "),
                    (a.tags||[]).join(" "), (a.anliegen||[]).map(j=>ANL[j]||"").join(" ")
                   ].join(" "));
-  a._sort = (a.datum||"").split(".").reverse().join("");
+  a._sort = datumSchluessel(a.datum);
 });
 
 const Z = {fach:null, anliegen:null, gefaesse:new Set(), stufen:new Set(),
@@ -619,7 +641,14 @@ function zeichneListe(){
   const t = treffer();
   const sortiert = t.slice().sort((x,y) => {
     if (Z.sortierung==="titel")  return x.titel.localeCompare(y.titel,"de");
-    if (Z.sortierung==="datum")  return (y._sort||"").localeCompare(x._sort||"");
+    if (Z.sortierung==="datum"){
+      // Neuste zuerst. Undatiertes ans Ende statt mittendrin — sonst sieht es
+      // aus, als hätte die Sortierung ausgesetzt.
+      if (x._sort && y._sort && x._sort !== y._sort) return y._sort.localeCompare(x._sort);
+      if (x._sort && !y._sort) return -1;
+      if (!x._sort && y._sort) return 1;
+      return x.titel.localeCompare(y.titel,"de");
+    }
     if (Z.sortierung==="aufwand")return AUFWAENDE.indexOf(x.aufwand)-AUFWAENDE.indexOf(y.aufwand);
     return GEFAESSE.indexOf(x.gefaess)-GEFAESSE.indexOf(y.gefaess)
         || x.titel.localeCompare(y.titel,"de");
