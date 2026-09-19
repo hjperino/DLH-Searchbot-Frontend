@@ -62,21 +62,42 @@
   /* ---------- Gerüst: Kopfzeile + drei Spalten, volle Fensterhöhe ---------- */
   .app{
     display:grid;
-    grid-template-rows:auto minmax(0,1fr);
+    grid-template-rows:auto auto auto minmax(0,1fr);
     height:100dvh;
+    padding-top:env(safe-area-inset-top,0px);
   }
+
+  /* ---------- Markenleiste, wie auf der Ursprungsseite ---------- */
+  .dlhbar{height:6px; background:linear-gradient(90deg,var(--purple) 0%,var(--orange) 100%)}
+  .dlhtop{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:14px 22px 12px; background:var(--bg);
+  }
+  .dlhtop img{height:42px; width:auto; display:block}
+  /* Das Logo ist dunkelviolett auf Transparent und verschwindet auf dunklem
+     Grund. Eine helle Platte darunter lässt die Marke unangetastet. */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .dlhtop img{
+      background:#fff; padding:5px 9px; border-radius:6px;
+    }
+  }
+  :root[data-theme="dark"] .dlhtop img{background:#fff; padding:5px 9px; border-radius:6px}
+  .dlhtop .ersatz{font-weight:700; font-size:15px; color:var(--purple)}
+  .zurueck{
+    font-size:12.8px; font-weight:700; color:var(--text); text-decoration:none;
+    border-bottom:2px solid var(--orange); padding-bottom:1px; white-space:nowrap;
+  }
+  .zurueck:hover{color:var(--orange)}
+
   .kopf{
     display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-    padding:10px 18px; padding-top:calc(10px + env(safe-area-inset-top,0px));
-    border-bottom:1px solid var(--line); background:var(--panel);
+    padding:10px 22px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    background:var(--panel);
   }
   .kopf h1{font-size:16px; font-weight:600; margin:0; letter-spacing:-.01em}
   .kopf .zahl{color:var(--orange); font-weight:700}
   .kopf .stand{color:var(--muted); font-size:12px; margin-left:auto}
-  .marke{width:26px;height:26px;border-radius:50%;background:var(--orange);
-         position:relative;flex:none}
-  .marke::after{content:"";position:absolute;inset:7px -9px 7px 11px;
-         border-radius:50%;border:2px solid var(--purple)}
 
   .spalten{
     display:grid; grid-template-columns:var(--col-l) minmax(0,1fr) var(--col-r);
@@ -141,11 +162,19 @@
   .anl .n{margin-left:auto; color:var(--muted); font-size:11.5px;
           font-variant-numeric:tabular-nums; flex:none}
   .anl[data-leer="1"]{opacity:.4}
+  /* Erscheint nur, wenn wirklich gefiltert ist — dann aber deutlich.
+     Gestrichelt und grau war es vorher, und damit sah es aus wie eine
+     Randnotiz statt wie der Weg zurück. */
   .zuruecksetzen{
-    width:100%; border:1px dashed var(--line); background:none; border-radius:8px;
-    padding:7px; font-size:12.5px; color:var(--muted); cursor:pointer; margin-bottom:14px;
+    width:100%; border:0; background:var(--orange); color:#fff; border-radius:8px;
+    padding:10px 12px; font-size:14px; font-weight:600; cursor:pointer;
+    margin-bottom:16px; display:flex; align-items:center; justify-content:center;
+    gap:8px; box-shadow:0 1px 3px rgba(236,102,8,.35);
   }
-  .zuruecksetzen:hover{border-color:var(--orange); color:var(--orange)}
+  .zuruecksetzen:hover{background:#d75c07}
+  .zuruecksetzen .x{
+    font-size:16px; line-height:1; opacity:.85; font-weight:400;
+  }
 
   /* ---------- Mittlere Spalte: Ergebnisse, sofort sichtbar ---------- */
   .suchzeile{
@@ -208,17 +237,17 @@
   .punkt[data-status="ok"]{background:#2f9e5f}
   .punkt[data-status="weg"]{background:#c8402f}
   .bot-kopf p{margin:5px 0 0; font-size:11.5px; color:var(--muted); line-height:1.45}
+  .botreset{
+    margin-left:auto; border:1px solid var(--line); background:var(--card);
+    border-radius:6px; padding:3px 9px; font-size:11.5px; font-weight:500;
+    color:var(--muted); cursor:pointer;
+  }
+  .botreset:hover{border-color:var(--orange); color:var(--orange)}
   .kontext{
     margin:10px 14px 0; padding:9px 11px; border-radius:8px;
     background:var(--card); border:1px solid var(--line); font-size:12px;
   }
   .kontext b{color:var(--orange)}
-  .vorschlaege{display:flex; flex-direction:column; gap:5px; margin-top:8px}
-  .vorschlag{
-    text-align:left; border:1px solid var(--line); background:none; border-radius:7px;
-    padding:5px 9px; font-size:12px; cursor:pointer; color:var(--text);
-  }
-  .vorschlag:hover{border-color:var(--orange); color:var(--orange)}
   .verlauf{flex:1; min-height:0; overflow-y:auto; padding:12px 14px;
            display:flex; flex-direction:column; gap:10px}
   .blase{padding:9px 12px; border-radius:11px; font-size:13.5px; line-height:1.5; max-width:100%}
@@ -257,6 +286,13 @@
     .tueren{grid-template-columns:1fr 1fr}
   }
   @media (max-width:620px){ .tueren{grid-template-columns:1fr} }
+  @media (max-width:560px){
+    .dlhtop{padding:10px 16px 8px}
+    .dlhtop img{height:34px}
+    .kopf{padding:9px 16px}
+    .kopf h1{font-size:15px}
+    .kopf .stand{margin-left:0; width:100%}
+  }
   @media (max-width:980px){
     /* minmax(0,…) statt 1fr: sonst setzt der breiteste Inhalt — eine lange
        Fachbezeichnung in einer Karte — die Untergrenze der Spalte, und die
@@ -287,8 +323,18 @@
 </head>
 <body>
 <div class="app">
+  <div class="dlhbar" aria-hidden="true"></div>
+
+  <div class="dlhtop">
+    <a href="https://dlh.zh.ch" target="_blank" rel="noopener"
+       aria-label="Digital Learning Hub Sek II">
+      <img id="dlhlogo" src="https://dlh.zh.ch/images/elements/DLH-Logo-Wappen-und-Loewe.svg"
+           alt="Digital Learning Hub Sek II">
+    </a>
+    <a class="zurueck" href="https://dlh.zh.ch" target="_blank" rel="noopener">dlh.zh.ch</a>
+  </div>
+
   <header class="kopf">
-    <div class="marke" aria-hidden="true"></div>
     <h1>Was brauche ich für meinen Unterricht?</h1>
     <span class="trefferzahl" style="display:none"></span>
     <span class="stand" id="stand"></span>
@@ -298,7 +344,9 @@
 
     <!-- ===== links: die Türen ===== -->
     <aside class="spalte links" id="links">
-      <button class="zuruecksetzen" id="reset" hidden>Alle Filter zurücksetzen</button>
+      <button class="zuruecksetzen" id="reset" type="button" hidden>
+        <span class="x" aria-hidden="true">✕</span> Alle Filter zurücksetzen
+      </button>
 
       <div class="tueren">
         <section class="box box-fach spann">
@@ -357,7 +405,9 @@
     <aside class="rechts" id="rechts">
       <div class="bot-kopf">
         <h2><span class="punkt" id="punkt" data-status="?"></span> DLH-Bot
-            <span id="botlage" style="font-weight:400;color:var(--muted);font-size:11.5px"></span></h2>
+            <span id="botlage" style="font-weight:400;color:var(--muted);font-size:11.5px"></span>
+            <button class="botreset" id="botreset" type="button"
+                    title="Gespräch löschen und neu beginnen">✕ Zurücksetzen</button></h2>
         <p id="botstatus">Fragen Sie, was die Liste nicht beantwortet: was etwas
           bedeutet, wer dahintersteckt, wann das Nächste läuft.</p>
       </div>
@@ -570,31 +620,21 @@ function baueKontext(){
   Z.gefaesse.forEach(g => teile.push(g));
   if (Z.suche) teile.push('„'+Z.suche+'“');
 
-  const fragen = [];
-  if (Z.anliegen !== null && Z.fach)
-    fragen.push("Was läuft demnächst zu "+Z.fach+"?");
-  else if (Z.fach)
-    fragen.push("Welche Weiterbildung gibt es für "+Z.fach+"?");
-  if (Z.anliegen !== null)
-    fragen.push("Gibt es einen kommenden Workshop zum Thema "+
-                ANL[Z.anliegen].replace(/^…\s*/,"").split(":")[0].split(",")[0]+"?");
-  if (Z.gefaesse.has("Innovationsfonds"))
-    fragen.push("Wie kann ich ein Innovationsfondsprojekt einreichen?");
-  if (Z.suche) fragen.push("Was ist "+Z.suche+"?");
-  fragen.push("Was ist das nächste Angebot im Kalender?");
-
+  /* Keine Fragevorschläge mehr.
+     Aus dem Filter abgeleitete Fragen klangen plausibel und waren es nicht:
+     «Sport» hat ein einziges Angebot, der Vorschlag lautete «Welche
+     Weiterbildung gibt es für Sport?», und der Bot antwortete mit dem
+     allgemeinen Weiterbildungsangebot — korrekt, aber am Fach vorbei. Ein
+     Vorschlag, der ins Leere führt, ist schlechter als keiner: er verspricht
+     dem Lesenden, die Frage sei die richtige. Was bleibt, ist der Hinweis,
+     wofür der Bot zuständig ist. Die gezielte Frage steht weiterhin auf
+     jeder Karte («Bot dazu fragen») — die nennt einen konkreten Titel und
+     trifft deshalb. */
   k.hidden = false;
   k.innerHTML = '<div>Ihr Filter: <b>'+esc(teile.join(" · "))+'</b><br>'+
     '<span style="color:var(--muted)">Die Liste zeigt den Stand vom '+
-    esc(DB.stand_der_uebersicht||"")+'. Was danach kommt, weiss nur der Bot.</span></div>'+
-    '<div class="vorschlaege"></div>';
-  const v = k.querySelector(".vorschlaege");
-  fragen.slice(0,3).forEach(f => {
-    const b = document.createElement("button");
-    b.className = "vorschlag"; b.type = "button"; b.textContent = f;
-    b.addEventListener("click", () => frageStellen(f));
-    v.appendChild(b);
-  });
+    esc(DB.stand_der_uebersicht||"")+'. Fragen Sie mich nach Hintergrund, '+
+    'Personen oder kommenden Terminen — das steht hier nicht.</span></div>';
 }
 
 /* ---------- Die Brücke zurück: Bot-Antwort -> Sprung in die Liste ----------- */
@@ -631,7 +671,24 @@ function fundstellenAus(el){
 
 /* ---------- Der Bot --------------------------------------------------------- */
 let zustand = null;
-const sitzung = "proto-" + Math.random().toString(36).slice(2,10);
+let sitzung = "proto-" + Math.random().toString(36).slice(2,10);
+
+const BEGRUESSUNG =
+  "Die Liste links zeigt, was es gibt. Ich sage Ihnen, was ein Angebot ist, "+
+  "wer dahintersteckt und was als Nächstes läuft. Fragen Sie einfach — oder "+
+  "klicken Sie auf einer Karte «Bot dazu fragen».";
+
+/* Zurücksetzen heisst: Verlauf weg UND Gesprächszustand weg. Nur die Blasen
+   zu löschen würde täuschen — der Bot trüge den alten conversation_state
+   weiter und bezöge sich auf ein Gespräch, das nicht mehr zu sehen ist. */
+function botZuruecksetzen(){
+  zustand = null;
+  sitzung = "proto-" + Math.random().toString(36).slice(2,10);
+  $("#verlauf").textContent = "";
+  blase(BEGRUESSUNG, "bot");
+  $("#frage").value = "";
+  $("#frage").focus();
+}
 
 function blase(text, art, alsHtml){
   const d = document.createElement("div");
@@ -718,12 +775,23 @@ window.addEventListener("resize", () => {
   if (window.innerWidth > 980){ $("#links").hidden=false; $("#rechts").hidden=false; }
 });
 
+$("#botreset").addEventListener("click", botZuruecksetzen);
+
+/* Das Logo liegt auf dlh.zh.ch, wie bei André. Auf GitHub Pages lädt es;
+   in einer Umgebung mit strenger Inhaltsrichtlinie (etwa der Artefakt-
+   Vorschau) wird es blockiert. Dann steht der Name da statt eines
+   kaputten Bildsymbols. */
+$("#dlhlogo").addEventListener("error", function(){
+  const ersatz = document.createElement("span");
+  ersatz.className = "ersatz";
+  ersatz.textContent = "Digital Learning Hub Sek II";
+  this.replaceWith(ersatz);
+});
+
 alles();
 umschalten("liste");
 botStatus();
-blase("Die Liste links zeigt, was es gibt. Ich sage Ihnen, was ein Angebot ist, "+
-      "wer dahintersteckt und was als Nächstes läuft. Setzen Sie einen Filter – "+
-      "ich schlage dann passende Fragen vor.", "bot");
+blase(BEGRUESSUNG, "bot");
 </script>
 </body>
 </html>
