@@ -271,6 +271,12 @@
             border-color: var(--dlh-bordeaux);
             box-shadow: 0 0 0 3px rgba(139, 30, 63, 0.18);
         }
+        /* Datenschutz-Hinweis unter dem Eingabefeld (26.10.2026) */
+        .chat-input .privacy-note {
+            margin: 8px 15px 0 15px;
+            font-size: 0.8rem;
+            color: #666;
+        }
 		
 		/* --- Fokus 2026 Card (Startscreen) --- */
 .fokus-card{
@@ -698,6 +704,7 @@
                 <input type="text" id="chatInput" placeholder="Stellen Sie eine Frage... (aber Antwort pr&uuml;fen, bin in stetem Training! )" autocomplete="off">
                 <button type="submit" title="Senden">&uarr;</button>
             </form>
+            <p class="privacy-note">Bitte keine Personendaten eingeben. Die Fragen werden von einem externen KI-Dienst verarbeitet.</p>
         </div>
     </div>
 
@@ -719,12 +726,77 @@
     let lastQuestionAnswer = {};
     // Speichert den Conversation-State aus dem Backend (Follow-ups etc.)
     let conversationState = null;
-	// NEU: stabile Session-ID pro Browser (muss vor sendMessage existieren!)
-    let sessionId = localStorage.getItem("dlh_session_id");
-    if (!sessionId) {
-    sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
-    localStorage.setItem("dlh_session_id", sessionId);
-}
+	// Session-ID nur im Arbeitsspeicher, neu bei jedem Laden der Seite
+    // (muss vor sendMessage existieren!).
+    // Datenschutz (26.10.2026): vorher dauerhaft in localStorage, damit waren
+    // Fragen desselben Browsers über Wochen verknüpfbar. Der Server vergisst den
+    // Verlauf ohnehin nach 30 Minuten, die dauerhafte Kennung brachte nichts.
+    function newSessionId() {
+        return (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
+    }
+    let sessionId = newSessionId();
+    // Alte dauerhafte Kennung von früheren Besuchen entfernen.
+    try { localStorage.removeItem("dlh_session_id"); } catch (_) { /* Speicher gesperrt: nichts zu tun */ }
+
+    // ---------- Antworten des Servers bereinigen (26.10.2026) ----------
+    // Die Antwort kommt als HTML und wird per innerHTML eingesetzt. Ohne Filter
+    // könnte ein manipulierter Server oder eine präparierte KI-Antwort Code
+    // einschleusen. Erlaubt ist nur, was der Bot wirklich braucht: Text-
+    // struktur, Links (http/https/mailto) und die Vorschlags-Knöpfe.
+    const BOT_ALLOWED_TAGS = new Set([
+        "SECTION", "ARTICLE", "DIV", "P", "SPAN", "B", "STRONG", "I", "EM", "SMALL",
+        "BR", "HR", "UL", "OL", "LI", "DL", "DT", "DD",
+        "H1", "H2", "H3", "H4", "H5", "A", "BUTTON", "TIME", "BLOCKQUOTE"
+    ]);
+    // Diese Elemente fliegen samt Inhalt raus.
+    const BOT_DROP_TAGS = new Set([
+        "SCRIPT", "STYLE", "IFRAME", "FRAME", "FRAMESET", "OBJECT", "EMBED",
+        "TEMPLATE", "NOSCRIPT", "SVG", "MATH", "FORM", "INPUT", "TEXTAREA",
+        "SELECT", "LINK", "META", "BASE", "IMG", "VIDEO", "AUDIO", "SOURCE"
+    ]);
+    // Einziges erlaubtes onclick: die Vorschlags-Knöpfe des Backends.
+    const SUGGEST_ONCLICK_RE = /^\s*sendSuggestedQuestion\(\s*(['"])([\s\S]*)\1\s*\)\s*;?\s*$/;
+
+    function sanitizeBotHtml(html) {
+        const tpl = document.createElement("template"); // inert: nichts wird geladen oder ausgeführt
+        tpl.innerHTML = String(html ?? "");
+        const walk = (parent) => {
+            for (const el of Array.from(parent.children)) {
+                const tag = el.tagName.toUpperCase();
+                if (BOT_DROP_TAGS.has(tag)) { el.remove(); continue; }
+                if (!BOT_ALLOWED_TAGS.has(tag)) {
+                    // Unbekanntes Element: Inhalt behalten, Hülle weg.
+                    walk(el);
+                    el.replaceWith(...Array.from(el.childNodes));
+                    continue;
+                }
+                for (const attr of Array.from(el.attributes)) {
+                    const name = attr.name.toLowerCase();
+                    const val = attr.value || "";
+                    if (name === "class" || name === "title" || name === "datetime") continue;
+                    if (name === "style" && !/url\s*\(|expression|@import|javascript:/i.test(val)) continue;
+                    if (name === "href" && tag === "A" && /^(https?:|mailto:)/i.test(val.trim())) continue;
+                    if (name === "onclick" && tag === "BUTTON") {
+                        const m = val.match(SUGGEST_ONCLICK_RE);
+                        if (m) {
+                            // Neu aufbauen statt übernehmen: nur noch dieser eine Aufruf möglich.
+                            el.setAttribute("onclick", "sendSuggestedQuestion(" + JSON.stringify(m[2]) + ")");
+                            continue;
+                        }
+                    }
+                    el.removeAttribute(attr.name);
+                }
+                if (tag === "A" && el.hasAttribute("href")) {
+                    el.setAttribute("target", "_blank");
+                    el.setAttribute("rel", "noopener noreferrer");
+                }
+                if (tag === "BUTTON") el.setAttribute("type", "button");
+                walk(el);
+            }
+        };
+        walk(tpl.content);
+        return tpl.innerHTML;
+    }
     // Admin-Status beim Laden wiederherstellen — Token (kein Klartext-Flag mehr).
     // Migration: alten "isEditor"-Eintrag aufräumen, falls noch vorhanden.
     sessionStorage.removeItem("isEditor");
@@ -737,7 +809,7 @@
     bubble.className = "message-bubble";
 
     if (htmlContent) {
-        bubble.innerHTML = htmlContent;
+        bubble.innerHTML = sanitizeBotHtml(htmlContent);
     } else {
         bubble.textContent = text;
     }
@@ -870,8 +942,7 @@ window.sendSuggestedQuestion = function(message) {
     window.lastUserQuestion = null;
 
     // Neue Session-ID, damit auch serverseitiges Memory frisch ist
-    sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
-    localStorage.setItem("dlh_session_id", sessionId);
+    sessionId = newSessionId();
 
     // Optional: UI visuell "frisch" machen (ohne Reset-Screen)
     // Wenn du stattdessen den kompletten Startscreen willst, rufe resetChatUiAndState() auf.
@@ -1055,7 +1126,7 @@ function addMessageToChat(message, sender, isError = false, isLoading = false) {
         try {
             const cleaned = stripSourcesFromHtml(String(message ?? ""));
             const formatted = formatBotMessage(cleaned, []);
-            messageBubble.innerHTML = formatted;
+            messageBubble.innerHTML = sanitizeBotHtml(formatted);
         } catch (e) {
             console.error("Bot formatting failed", e);
             messageBubble.textContent = String(message ?? "");
@@ -1099,8 +1170,7 @@ function resetChatUiAndState() {
     window.lastUserQuestion = null;
 
     // neue Session-ID erzwingen (damit Backend-Memory neu startet)
-    sessionId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random());
-    localStorage.setItem("dlh_session_id", sessionId);
+    sessionId = newSessionId();
 
     // UI reset
     if (chatMessages) {
@@ -1148,18 +1218,19 @@ chatForm?.addEventListener("submit", async (e) => {
         await sendMessage(message);
     }
 });
-    window.addEventListener("load", async () => {
-        try {
-            const res = await fetch(`${API_URL}/health`);
-            const data = await res.json();
-            console.log("✅ API connected:", data);
-        } catch (error) {
-            console.error("Health check failed:", error);
-        }
-    });
+    // Datenschutz (26.10.2026): kein Serverkontakt beim blossen Laden der Seite.
+    // Erst beim ersten Tastendruck im Eingabefeld wird der Server geweckt
+    // (verkürzt den Kaltstart bei Render). Knöpfe senden ohnehin direkt.
+    chatInput.addEventListener("input", () => {
+        fetch(`${API_URL}/health`)
+            .then(res => res.json())
+            .then(data => console.log("✅ API connected:", data))
+            .catch(error => console.error("Health check failed:", error));
+    }, { once: true });
 
     chatInput.focus();
-</script>	
-	
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b27fb001c7f24c4',t:'MTc2NjQ5NDE4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</script>
+
+<!-- 26.10.2026: Cloudflare-Skript aus der perino.info-Zeit entfernt (auf GitHub Pages wirkungslos). -->
+</body>
 </html>
