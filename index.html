@@ -779,8 +779,14 @@
                     if (name === "onclick" && tag === "BUTTON") {
                         const m = val.match(SUGGEST_ONCLICK_RE);
                         if (m) {
+                            // Backend liefert seit 26.10.2026 ein JSON-String-Literal ("..."),
+                            // ältere FAQ-Einträge noch '...'. JSON dekodieren, sonst roh nehmen.
+                            let frage = m[2];
+                            if (m[1] === '"') {
+                                try { frage = JSON.parse('"' + m[2] + '"'); } catch (_) { /* roh lassen */ }
+                            }
                             // Neu aufbauen statt übernehmen: nur noch dieser eine Aufruf möglich.
-                            el.setAttribute("onclick", "sendSuggestedQuestion(" + JSON.stringify(m[2]) + ")");
+                            el.setAttribute("onclick", "sendSuggestedQuestion(" + JSON.stringify(frage) + ")");
                             continue;
                         }
                     }
