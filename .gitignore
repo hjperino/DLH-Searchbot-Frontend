@@ -8,3 +8,7 @@
 
 # OS-generated thumbnails
 Thumbs.db
+
+# Dreamweaver (Sync-Notizen nennen altes Hosting)
+_notes/
+*.LCK
